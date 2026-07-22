@@ -8,6 +8,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(SOURCES
         source/Utils/Bitstream.h
         source/Common/TabledANS.h
+        source/Common/ContextModeler.h
+        source/Dec/ANSDecoder.cpp
+        source/Enc/ANSEncoder.cpp
         source/DynamicANS.cpp)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}")
