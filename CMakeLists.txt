@@ -6,9 +6,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(SOURCES
+        source/Utils/Util.h
+        source/Utils/Debug.h
         source/Utils/Bitstream.h
         source/Common/TabledANS.h
-        source/Common/ContextModeler.h
+        source/Common/Context.h
         source/Dec/ANSDecoder.cpp
         source/Enc/ANSEncoder.cpp
         source/DynamicANS.cpp)

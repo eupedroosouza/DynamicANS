@@ -66,7 +66,6 @@ class BitstreamReader {
             buffer = buffer | (static_cast<uint32_t>(nextBits) << count);
             count += 8;
         }
-
     }
 
 public:
@@ -111,7 +110,7 @@ public:
         return data;
     }
 
-    [[nodiscard]] unsigned int getCount() const {
-        return count;
+    [[nodiscard]] bool hasBits(const unsigned int n) const {
+        return (count + (bitstream.size() * 8)) >= n;
     }
 };

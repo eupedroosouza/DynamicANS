@@ -699,3 +699,6 @@ cython_debug/
 .idea/
 
 DynamicANS
+bitplanes/
+*.txt
+!python/requirements.txt

@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <cstdint>
+#include <iostream>
 #include <list>
 
 #include "Utils/Bitstream.h"
@@ -59,15 +60,17 @@ class Table {
     std::vector<DecodeState> decodeStates = {};
 
 public:
+    std::vector<uint32_t> alphabet;
+
     Table() = default;
 
-    explicit Table(const uint32_t L, const std::list<State> &states) {
-        // Temporary (.dat needs has an L number)
+    explicit Table(const uint32_t L, const std::vector<uint32_t> &alphabet, const std::list<State> &states) {
         this->L = L;
+        this->alphabet = alphabet;
 
         this->states.resize(L);
         for (const State &state: states) {
-            this->states[state.state - L] = state;
+            this->states.at(state.state - L) = state;
         }
 
         this->decodeStates.resize(L);
@@ -75,14 +78,14 @@ public:
             for (uint8_t symbol = 0; symbol < static_cast<uint8_t>(state.nextStates.size()); ++symbol) {
                 const uint32_t &nextState = state.nextStates[symbol];
                 if (state.bitstreams.empty() && this->decodeStates[nextState - L].symbol == 255) {
-                    this->decodeStates[nextState - L] = DecodeState(symbol, 0, state.state);
+                    this->decodeStates.at(nextState - L) = DecodeState(symbol, 0, state.state);
                     continue;
                 }
                 const StateBitstream &stateBitstream = state.bitstreams.at(symbol);
-                if (this->decodeStates[nextState - L].symbol == 255) {
-                    this->decodeStates[nextState - L] = DecodeState(symbol, stateBitstream.size, state.state);
+                if (this->decodeStates.at(nextState - L).symbol == 255) {
+                    this->decodeStates.at(nextState - L) = DecodeState(symbol, stateBitstream.size, state.state);
                 } else {
-                    DecodeState &decodeState = this->decodeStates[nextState - L];
+                    DecodeState &decodeState = this->decodeStates.at(nextState - L);
                     decodeState.base = std::min(decodeState.base, state.state);
                 }
             }
@@ -121,7 +124,8 @@ public:
      * @return a pair of previous state and symbol value
      */
     uint8_t decode(uint32_t &currentState, BitstreamReader &reader) const {
-        const DecodeState &decodeState = this->decodeStates[currentState - L];
+        const uint32_t idx = currentState - L;
+        const DecodeState &decodeState = this->decodeStates[idx];
 
         // A state without a bitstream
         if (decodeState.N == 0) {

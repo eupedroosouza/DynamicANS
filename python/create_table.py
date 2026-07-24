@@ -7,7 +7,8 @@ from pathlib import Path
 import numpy as np
 
 class TableResult:
-    def __init__(self, states: dict[int, list[int]], bitstreams: dict[int, list[tuple[int, int]]]):
+    def __init__(self, alphabet: list[int], states: dict[int, list[int]], bitstreams: dict[int, list[tuple[int, int]]]):
+        self.alphabet = alphabet
         self.states = states
         self.bitstreams = bitstreams
 
@@ -16,20 +17,20 @@ class CreateResult:
         self.range = range
         self.tables = tables
 
-def create_tables(m: int) -> CreateResult:
+def create_tables(L: int) -> CreateResult:
 
     tables: list[TableResult] = []
-    for i in range(0, (m - 1), 1):
-        freqA: int = i + 1
-        freqB: int = m - freqA
-        alphabet: dict[int, int] = {0: freqA, 1: freqB}
+    for i in range(1, L, 1):
+        freq_a: int = i
+        freq_b: int = L - freq_a
+        alphabet: dict[int, int] = {0: freq_a, 1: freq_b}
         cumulative = np.insert(np.cumsum(list(alphabet.values())), 0, 0).astype(np.int32).tolist()
-        output_states, output_bitstreams = create_encoder_table(m, alphabet, cumulative)
-        tables.append(TableResult(output_states, output_bitstreams))
-        print(f"Generated table {i}.")
+        output_states, output_bitstreams = create_encoder_table(L, alphabet, cumulative)
+        tables.append(TableResult(alphabet, output_states, output_bitstreams))
+        print(f"Generated table {i}. ({freq_a}/{L}, {freq_b}/{L})")
         pass
 
-    return CreateResult(m, tables)
+    return CreateResult(L, tables)
     
 
 def save_tables_as_binary(createdTable: CreateResult, bin_file: Path | str):
@@ -50,14 +51,16 @@ def save_tables_as_binary(createdTable: CreateResult, bin_file: Path | str):
             first_state_key = next(iter(table.states))
             symbols_size = len(table.states[first_state_key])
             file.write(struct.pack("<B", symbols_size))
+            for freq in table.alphabet.values():
+                file.write(struct.pack("<I", freq))
 
             for state, next_states in table.states.items():
                 bitstream = table.bitstreams[state]
                 for i, next_state in enumerate(next_states):
-                    file.write(struct.pack("<H", next_state))
+                    file.write(struct.pack("<I", next_state))
                     bs = bitstream[i]
-                    file.write(struct.pack("<B", bs[0]))
-                    file.write(struct.pack("<B", bs[1]))
+                    file.write(struct.pack("<I", bs[0]))
+                    file.write(struct.pack("<I", bs[1]))
 
     print(f"Saved binary tables on {bin_file}.")
 
@@ -154,9 +157,13 @@ def main():
     parser.add_argument("--bin", "-b", required=True, help="Binary (.bin) save file")
 
     args = parser.parse_args()
-   
 
-    createdTable = create_tables(int(args.range))
+    range = int(args.range)
+    if not (range > 0 and (range & (range - 1))) == 0:
+        print("To work correctly, range need's a power of two.")
+        return
+
+    createdTable = create_tables(range)
     bin_file = Path(args.bin)
     save_tables_as_binary(createdTable, bin_file)
         
