@@ -149,15 +149,15 @@ int main(const int argc, char *argv[]) {
         uint32_t originalBitsSize = input.size();
         uint32_t encodedBitsSize = bytestream.size() * 8;
         double compressionRatio = (static_cast<double>(originalBitsSize) / encodedBitsSize);
+        double compression = (1.0 - (static_cast<double>(encodedBitsSize) / originalBitsSize)) * 100.0;
+
 
         std::cout << "=== ENCODING SUMMARY ===" << std::endl;
         std::cout << "Bins encoded: " + std::to_string(input.size()) << std::endl;
         std::cout << "Original size (bits): " + std::to_string(originalBitsSize) << std::endl;
         std::cout << "Encoded size (bits): " + std::to_string(encodedBitsSize) << std::endl;
-        char compressionRatioStr[255];
-        snprintf(compressionRatioStr, sizeof(compressionRatioStr), "%.2f", compressionRatio);
-        std::cout << "Compression ratio: " + std::to_string(compressionRatio) + " (" + compressionRatioStr + "%)" <<
-                std::endl;
+        std::cout << "Compression ratio: " + std::to_string(compressionRatio)  << std::endl;
+        std::cout << "Compression (%): " + std::to_string(compression) << std::endl;
         std::cout << "Final state: " << std::to_string(encoder.currentState) << std::endl;
         std::cout << "Encode time: " << std::to_string(encTime) << std::endl;
 

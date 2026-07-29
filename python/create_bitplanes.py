@@ -6,6 +6,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
+def int_to_bits(valor, num_bits=32):
+    binario_str = format(valor, f'0{num_bits}b')
+    return [int(b) for b in binario_str]
+
 
 # https://github.com/fernando-bertoldi/Projeto-ANS/blob/main/Bit_Planes.py
 def bit_plane_slicing(image_path, name, dir):
@@ -32,8 +36,40 @@ def bit_plane_slicing(image_path, name, dir):
     final_dir = f'{dir}/{name}'
     Path(final_dir).mkdir(parents=True, exist_ok=True)
     for bit in range(8):
+
+        buffers = [[] for _ in range(4)]
+
+        bp = planes_binary[bit]
+        lines, columns = bp.shape
+        # Applied 2D context to improve entropy coding
+        # 4 contexts by up and left:
+        # 00 - up and left are white
+        # 01 - left is white, up is black
+        # 10 - left is black, up is white
+        # 11 - up and left are black
+        for y in range(lines):
+            for x in range(columns):
+                left = bp[y, x - 1] if x > 0 else 0
+                up = bp[y - 1, x] if y > 0 else 0
+
+                ctx = (left << 1) | up
+                real_bit = bp[y, x]
+                buffers[ctx].append(real_bit)
+
+
+        data = []
+
+        for i in range(4):
+            buffer_size = len(buffers[i])
+            bits = int_to_bits(buffer_size, 32)
+            data.extend(bits)
+
+        for i in range(4):
+            # append buffers size to reconstruct if necessary
+            data.extend(buffers[i])
+
         filename = os.path.join(final_dir, f'{bit}.txt')
-        np.savetxt(filename, planes_binary[bit].reshape(1, -1), fmt='%d', delimiter='')
+        np.savetxt(filename, np.array(data).reshape(1, -1), fmt='%d', delimiter='')
         print(f"Bitplane {bit} saved successfully on: {filename}")
 
     plt.figure(figsize=(12, 8))
