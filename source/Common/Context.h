@@ -47,20 +47,12 @@ public:
             return;
         }
         // A = 0, B = 1
-        uint32_t countA = counts[0];
-        uint32_t countB = counts[1];
-        // avoid 100% probability of symbol
-        // occurred when all symbols on adaptativeInterval was encoded with only one of the symbols
-        if (countA == 0) {
-            countA = 1;
-            countB--;
-        }
-        if (countB == 0) {
-            countB = 1;
-            countA--;
-        }
+        const uint32_t countA = counts[0];
+        const uint32_t countB = counts[1];
 
-        const double probA = static_cast<double>(countA) / (countA + countB);
+        // Applying Bayes with Laplace smoothing to avoid 0 probability
+        const double probA = static_cast<double>(countA + 1) / ((countA + countB) + 2);
+
         // Min Freq: 1 (when the probA is less than 1/range), Max Freq: range - 1 (when the probA is greater than range-1/range) - [e.g: range = 8, max freq for A = 7]
         const uint32_t freqA = std::max(1, std::min(static_cast<int>(L - 1), static_cast<int>(std::round(probA * L))));
 
