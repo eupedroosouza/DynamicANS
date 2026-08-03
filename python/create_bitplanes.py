@@ -14,11 +14,15 @@ def int_to_bits(valor, num_bits=32):
 # https://github.com/fernando-bertoldi/Projeto-ANS/blob/main/Bit_Planes.py
 def bit_plane_slicing(image_path, name, dir):
     print(f"Generating bitplane to: {name}")
-    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
-    if img is None:
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    img_color = cv2.imread(image_path, cv2.IMREAD_COLOR)
+
+    if img is None or img_color is None:
         print("Image load fail.")
         return
+
+    img_rgb = cv2.cvtColor(img_color, cv2.COLOR_BGR2RGB)
 
     planes_visual = []
     planes_binary = {}
@@ -72,14 +76,31 @@ def bit_plane_slicing(image_path, name, dir):
         np.savetxt(filename, np.array(data).reshape(1, -1), fmt='%d', delimiter='')
         print(f"Bitplane {bit} saved successfully on: {filename}")
 
-    plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(12, 10))
+    fig.suptitle(f'{name}', fontsize=18, fontweight='bold')
+
+    gs = fig.add_gridspec(3, 4)
+    ax_color = fig.add_subplot(gs[0, 1])
+    ax_color.imshow(img_rgb)
+    ax_color.set_title('Original')
+    ax_color.axis('off')
+
+    ax_gray = fig.add_subplot(gs[0, 2])
+    ax_gray.imshow(img, cmap='gray')
+    ax_gray.set_title('Grayscale')
+    ax_gray.axis('off')
+
     for i in range(8):
-        plt.subplot(2, 4, i + 1)
-        plt.imshow(planes_visual[i], cmap='gray')
-        plt.title(f'Bitplane {i}')
-        plt.axis('off')
+        row = 1 + (i // 4)
+        col = i % 4
+        ax_bp = fig.add_subplot(gs[row, col])
+        ax_bp.imshow(planes_visual[i], cmap='gray')
+        ax_bp.set_title(f'Bitplane {i}')
+        ax_bp.axis('off')
 
     plt.tight_layout()
+    plt.subplots_adjust(top=0.92)
+
     png_filename = os.path.join(final_dir, f'{name}_bitplane.png')
     plt.savefig(png_filename, dpi=300, bbox_inches='tight')
     plt.close()
