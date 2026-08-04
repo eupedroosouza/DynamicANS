@@ -1,0 +1,4 @@
+samples: 100
+executable: ../DynamicANS # needs .exe on Windows
+ranges: [8, 16, 32, 64, 128, 256]
+adaptativeIntervals: [32, 512, 1024, 5120, 10240]
