@@ -8,6 +8,7 @@
         this->currentState = reader.read(context->stateBits);
         this->context->currentTableIdx = reader.read(context->rangeBits);
         this->context->totalCount = reader.read(16);
+        this->context->check(reader, currentState);
     }
 
     uint8_t ANSDecoder::decodeBin() {

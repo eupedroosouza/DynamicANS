@@ -201,16 +201,15 @@ int main(const int argc, char *argv[]) {
         std::cout << "Initial state (final state of encode): " << std::to_string(decoder.currentState) << std::endl;
         auto decStart = std::chrono::high_resolution_clock::now();
         uint32_t size = decoder.decodeBins(32);
+        std::cout << "Bins to decode: " << std::to_string(size) << std::endl;
         std::vector<uint8_t> decoded(size);
         for (uint32_t i = 0; i < size; i++) {
             decoded[i] = decoder.decodeBin();
         }
         auto decEnd = std::chrono::high_resolution_clock::now();
         double decTime = std::chrono::duration<double>(decEnd - decStart).count();
-        std::cout << "Bins to decode: " << std::to_string(size) << std::endl;
         std::cout << "Decoded size: " << std::to_string(decoded.size()) << std::endl;
         std::cout << "Decode time: " + std::to_string(decTime) << std::endl;
-
         std::cout << "=== CHECKING DATA ===" << std::endl;
         if (!input.empty()) {
             bool eq = true;
