@@ -15,8 +15,10 @@ static std::string g_tablesFile;
 static std::string g_inputFile;
 static std::string g_bitstreamFile;
 static uint32_t g_adaptativeInterval;
-static bool g_useOutputFile = false;
-static std::string g_outputFile;
+static bool g_useEncodedFile = false;
+static std::string g_encodedFile;
+static bool g_useDecodedFile = false;
+static std::string g_decodedFile;
 
 static bool parseArgs(const int argc, char *argv[]) {
     std::unordered_map<std::string, std::string> args;
@@ -92,14 +94,21 @@ static bool parseArgs(const int argc, char *argv[]) {
         return false;
     }
 
-    if (args.count("--output")) {
-        g_outputFile = args["--output"];
-        g_useOutputFile = true;
-    } else if (args.count("-o")) {
-        g_outputFile = args["-o"];
-        g_useOutputFile = true;
+    if (args.count("--encodedFile")) {
+        g_encodedFile = args["--encodedFile"];
+        g_useEncodedFile = true;
+    } else if (args.count("-ef")) {
+        g_encodedFile = args["-ef"];
+        g_useEncodedFile = true;
     }
 
+    if (args.count("--decodedFile")) {
+        g_decodedFile = args["--decodedFile"];
+        g_useDecodedFile = true;
+    } else if (args.count("-df")) {
+        g_decodedFile = args["-df"];
+        g_useDecodedFile = true;
+    }
 
     return true;
 }
@@ -178,8 +187,8 @@ int main(const int argc, char *argv[]) {
         printMemStats("Encode memory:", encMemStats);
 
         // Saving bitstreams
-        if (g_useOutputFile) {
-            std::ofstream outputFile(g_outputFile, std::ios::out | std::ios::trunc);
+        if (g_useEncodedFile) {
+            std::ofstream outputFile(g_encodedFile, std::ios::out | std::ios::trunc);
             if (!outputFile.is_open()) {
                 std::cerr << "Error: Could not open or create the file!" << std::endl;
                 return -1;
@@ -188,7 +197,7 @@ int main(const int argc, char *argv[]) {
                 std::bitset<8> num(value);
                 outputFile << num;
             }
-            std::cout << "Saved encoded (bitstream) file on: " + g_outputFile + "." << std::endl;
+            std::cout << "Saved encoded (bitstream) file on: " + g_encodedFile + "." << std::endl;
             outputFile.close();
         }
     }
@@ -231,6 +240,21 @@ int main(const int argc, char *argv[]) {
         std::cout << "Decoded size: " << std::to_string(decoded.size()) << std::endl;
         std::cout << "Decode time: " + std::to_string(decTime) << std::endl;
         printMemStats("Decode memory:", decMemStats);
+
+        if (g_useDecodedFile) {
+            std::ofstream outputFile(g_decodedFile, std::ios::out | std::ios::trunc);
+            if (!outputFile.is_open()) {
+                std::cerr << "Error: Could not open or create the file!" << std::endl;
+                return -1;
+            }
+            for (uint8_t bit : decoded ) {
+                std::bitset<1> num(bit);
+                outputFile << num;
+            }
+            std::cout << "Saved decoded (bitstream) file on: " + g_decodedFile + "." << std::endl;
+            outputFile.close();
+        }
+
         std::cout << "=== CHECKING DATA ===" << std::endl;
         if (!input.empty()) {
             bool eq = true;
