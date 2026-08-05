@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(SOURCES
+        source/Utils/Memory.h
         source/Utils/Util.h
         source/Utils/Debug.h
         source/Utils/Bitstream.h

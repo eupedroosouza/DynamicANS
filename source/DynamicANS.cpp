@@ -7,6 +7,7 @@
 #include "Common/Context.h"
 #include "Dec/ANSDecoder.h"
 #include "Enc/ANSEncoder.h"
+#include "Utils/Memory.h"
 
 static bool g_doEncode;
 static bool g_doDecode;
@@ -111,11 +112,21 @@ int main(const int argc, char *argv[]) {
         return -1;
     }
 
+    std::cout << "=== CONTEXT ===" << std::endl;
+    size_t beforeLoadContextMemUsage = getCurrentRSS();
     Context context = Context::loadContextFromFile(g_tablesFile, g_adaptativeInterval);
+    size_t afterLoadContextMemUsage = getCurrentRSS();
+    size_t memUsageByContext = afterLoadContextMemUsage - beforeLoadContextMemUsage;
+    std::cout << "Memory usage (MB):" << std::endl;
+    std::cout << "  before: " << std::to_string(toMB(beforeLoadContextMemUsage)) << std::endl;
+    std::cout << "  after: " << std::to_string(toMB(afterLoadContextMemUsage)) << std::endl;
+    std::cout << "  usage by context: " << std::to_string(toMB(memUsageByContext)) << std::endl;
+
 
     std::vector<uint8_t> input;
     std::vector<uint8_t> bytestream;
     if (g_doEncode) {
+        std::cout << "=== ENCODING SUMMARY ===" << std::endl;
         ANSEncoder encoder(&context);
 
         // Load input
@@ -132,6 +143,9 @@ int main(const int argc, char *argv[]) {
         }
         file.close();
 
+        PeakMemorySampler encSampler;
+        size_t baselineEncMem = getCurrentRSS();
+        encSampler.start();
         auto encStart = std::chrono::high_resolution_clock::now();
 
         // Inversed encode
@@ -143,6 +157,7 @@ int main(const int argc, char *argv[]) {
 
         bytestream = encoder.finishEncoding();
 
+        MemoryStats encMemStats = encSampler.stop(baselineEncMem);
         auto encEnd = std::chrono::high_resolution_clock::now();
         double encTime = std::chrono::duration<double>(encEnd - encStart).count();
 
@@ -152,7 +167,7 @@ int main(const int argc, char *argv[]) {
         double compression = (1.0 - (static_cast<double>(encodedBitsSize) / originalBitsSize)) * 100.0;
 
 
-        std::cout << "=== ENCODING SUMMARY ===" << std::endl;
+
         std::cout << "Bins encoded: " + std::to_string(input.size()) << std::endl;
         std::cout << "Original size (bits): " + std::to_string(originalBitsSize) << std::endl;
         std::cout << "Encoded size (bits): " + std::to_string(encodedBitsSize) << std::endl;
@@ -160,6 +175,7 @@ int main(const int argc, char *argv[]) {
         std::cout << "Compression (%): " + std::to_string(compression) << std::endl;
         std::cout << "Final state: " << std::to_string(encoder.currentState) << std::endl;
         std::cout << "Encode time: " << std::to_string(encTime) << std::endl;
+        printMemStats("Encode memory:", encMemStats);
 
         // Saving bitstreams
         if (g_useOutputFile) {
@@ -199,6 +215,9 @@ int main(const int argc, char *argv[]) {
         ANSDecoder decoder(&context, std::move(bytestream));
 
         std::cout << "Initial state (final state of encode): " << std::to_string(decoder.currentState) << std::endl;
+        PeakMemorySampler decSampler;
+        size_t baselineDecMem = getCurrentRSS();
+        decSampler.start();
         auto decStart = std::chrono::high_resolution_clock::now();
         uint32_t size = decoder.decodeBins(32);
         std::cout << "Bins to decode: " << std::to_string(size) << std::endl;
@@ -206,10 +225,12 @@ int main(const int argc, char *argv[]) {
         for (uint32_t i = 0; i < size; i++) {
             decoded[i] = decoder.decodeBin();
         }
+        MemoryStats decMemStats = decSampler.stop(baselineDecMem);
         auto decEnd = std::chrono::high_resolution_clock::now();
         double decTime = std::chrono::duration<double>(decEnd - decStart).count();
         std::cout << "Decoded size: " << std::to_string(decoded.size()) << std::endl;
         std::cout << "Decode time: " + std::to_string(decTime) << std::endl;
+        printMemStats("Decode memory:", decMemStats);
         std::cout << "=== CHECKING DATA ===" << std::endl;
         if (!input.empty()) {
             bool eq = true;
