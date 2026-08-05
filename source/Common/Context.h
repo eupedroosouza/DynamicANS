@@ -57,12 +57,11 @@ public:
         const uint32_t freqA = std::max(1, std::min(static_cast<int>(L - 1), static_cast<int>(std::round(probA * L))));
 
         // Flush current state to bitstream
+        // It's needed because is necessary recover which table was defined on decode since the encoding occurs inversed
         writer.write(stateBits, currentState);
         writer.write(rangeBits, currentTableIdx);
         // Pick new table based on freqA
         const uint32_t idx = freqA - 1; // - 1 because starts with 0
-        // Flush new chosen table to bitstream
-        // It's needed because is necessary recover which table was defined on decode since the encoding occurs inversed
         currentTableIdx = idx;
         currentState = this->tables[currentTableIdx].getFirstState();
         // Redefine counts
