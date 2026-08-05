@@ -702,3 +702,4 @@ DynamicANS
 bitplanes/
 *.txt
 !python/requirements.txt
+python/*.csv
