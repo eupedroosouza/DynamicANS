@@ -703,3 +703,4 @@ bitplanes/
 *.txt
 !python/requirements.txt
 python/*.csv
+python/*.bin

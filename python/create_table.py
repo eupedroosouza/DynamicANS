@@ -57,7 +57,7 @@ def save_tables_as_binary(createdTable: CreateResult, bin_file: Path | str):
             for state, next_states in table.states.items():
                 bitstream = table.bitstreams[state]
                 for i, next_state in enumerate(next_states):
-                    file.write(struct.pack("<I", next_state))
+                    file.write(struct.pack("<I", next_state - createdTable.range))
                     bs = bitstream[i]
                     file.write(struct.pack("<I", bs[0]))
                     file.write(struct.pack("<I", bs[1]))

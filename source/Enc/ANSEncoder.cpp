@@ -15,7 +15,7 @@ void ANSEncoder::encodeBin(const uint8_t bin) {
 std::vector<uint8_t> &ANSEncoder::finishEncoding() {
     writer.write(16, context->totalCount);
     writer.write(context->rangeBits, context->currentTableIdx);
-    writer.write(context->stateBits, currentState);
+    writer.write(context->rangeBits, currentState);
 
     const uint8_t offset = writer.flush();
     writer.bitstream.push_back(offset);

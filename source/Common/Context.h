@@ -15,7 +15,8 @@ class Context {
 public:
     std::vector<Table> tables;
     uint32_t rangeBits = 0;
-    uint32_t stateBits = 0;
+    uint32_t adaptativeBits = 0;
+    //uint32_t stateBits = 0;
     uint32_t totalCount = 0;
     uint32_t adaptativeInterval = 0;
 
@@ -29,7 +30,8 @@ public:
         std::move(tables)) {
         this->L = L;
         this->rangeBits = bit_length(L);
-        this->stateBits = bit_length((2 * this->L) - 1);
+        this->adaptativeBits = 2 * rangeBits;
+        //this->stateBits = bit_length((2 * this->L) - 1);
         this->adaptativeInterval = adaptativeInterval;
         // The idea is try to pick the middle table, which is one closest to P(A) = 0.5 (or is P(A) 0.5).
         currentTableIdx = this->tables.size() / 2;
@@ -58,7 +60,7 @@ public:
 
         // Flush current state to bitstream
         // It's needed because is necessary recover which table was defined on decode since the encoding occurs inversed
-        writer.write(stateBits, currentState);
+        writer.write(rangeBits, currentState);
         writer.write(rangeBits, currentTableIdx);
         // Pick new table based on freqA
         const uint32_t idx = freqA - 1; // - 1 because starts with 0
@@ -77,12 +79,12 @@ public:
         }
 
         // Check if was bits to read yet
-        if (!reader.hasBits(rangeBits + stateBits)) {
+        if (!reader.hasBits(adaptativeBits)) {
             return;
         }
 
         currentTableIdx = reader.read(rangeBits);
-        currentState = reader.read(stateBits);
+        currentState = reader.read(rangeBits);
 
         // Redefine counts
         totalCount = adaptativeInterval;
@@ -118,8 +120,8 @@ public:
                 alphabet.push_back(freq);
             }
             std::list<State> states;
-            const uint32_t M = static_cast<uint16_t>(2 * L) - 1;
-            for (uint32_t state = L; state <= M; state++) {
+            //const uint32_t M = static_cast<uint16_t>(2 * L) - 1;
+            for (uint32_t state = 0; state < L; state++) {
                 std::vector<uint32_t> nextStates = {};
                 nextStates.resize(symbolsSize);
                 std::vector<StateBitstream> bitstreams = {};

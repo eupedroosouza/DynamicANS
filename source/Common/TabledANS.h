@@ -70,22 +70,22 @@ public:
 
         this->states.resize(L);
         for (const State &state: states) {
-            this->states.at(state.state - L) = state;
+            this->states.at(state.state) = state;
         }
 
         this->decodeStates.resize(L);
         for (const auto &state: this->states) {
             for (uint8_t symbol = 0; symbol < static_cast<uint8_t>(state.nextStates.size()); ++symbol) {
                 const uint32_t &nextState = state.nextStates[symbol];
-                if (state.bitstreams.empty() && this->decodeStates[nextState - L].symbol == 255) {
-                    this->decodeStates.at(nextState - L) = DecodeState(symbol, 0, state.state);
+                if (state.bitstreams.empty() && this->decodeStates[nextState].symbol == 255) {
+                    this->decodeStates.at(nextState) = DecodeState(symbol, 0, state.state);
                     continue;
                 }
                 const StateBitstream &stateBitstream = state.bitstreams.at(symbol);
-                if (this->decodeStates.at(nextState - L).symbol == 255) {
-                    this->decodeStates.at(nextState - L) = DecodeState(symbol, stateBitstream.size, state.state);
+                if (this->decodeStates.at(nextState).symbol == 255) {
+                    this->decodeStates.at(nextState) = DecodeState(symbol, stateBitstream.size, state.state);
                 } else {
-                    DecodeState &decodeState = this->decodeStates.at(nextState - L);
+                    DecodeState &decodeState = this->decodeStates.at(nextState);
                     decodeState.base = std::min(decodeState.base, state.state);
                 }
             }
@@ -99,7 +99,7 @@ public:
      * @return the first state
      */
     [[nodiscard]] uint32_t getFirstState() const {
-        return L;
+        return 0;
     }
 
     /**
@@ -110,7 +110,7 @@ public:
      * @return new state (as unsigned 16 bits)
      */
     void encode(uint32_t &currentState, const uint8_t symbol, BitstreamWriter &writer) const {
-        const State &state = states[currentState - L];
+        const State &state = states[currentState];
         const uint32_t &nextState = state.nextStates.at(symbol);
         const StateBitstream &bitstream = state.bitstreams.at(symbol);
         writer.write(bitstream.size, bitstream.bitstream);
@@ -124,8 +124,7 @@ public:
      * @return a pair of previous state and symbol value
      */
     uint8_t decode(uint32_t &currentState, BitstreamReader &reader) const {
-        const uint32_t idx = currentState - L;
-        const DecodeState &decodeState = this->decodeStates[idx];
+        const DecodeState &decodeState = this->decodeStates[currentState];
 
         // A state without a bitstream
         if (decodeState.N == 0) {

@@ -5,7 +5,7 @@
         const uint8_t offset = bytestream.back();
         bytestream.pop_back();
         this->reader = BitstreamReader(std::move(bytestream), offset);
-        this->currentState = reader.read(context->stateBits);
+        this->currentState = reader.read(context->rangeBits);
         this->context->currentTableIdx = reader.read(context->rangeBits);
         this->context->totalCount = reader.read(16);
         this->context->check(reader, currentState);
