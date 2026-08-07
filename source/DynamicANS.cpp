@@ -218,13 +218,12 @@ int main(const int argc, char *argv[]) {
             Logger::get().log("Finished encoding!");
 
             Logger::get().log("Stats:");
-            Logger::get().log(" Adaptive: ");
-            Logger::get().log("  Updates: " + std::to_string(Stats::get().updates));
-            Logger::get().log("  Bitstream bits: " + std::to_string(Stats::get().bitstreamBits));
-            Logger::get().log("  State bits: " + std::to_string(Stats::get().stateBits));
-            Logger::get().log("  Table bits: " + std::to_string(Stats::get().tableBits));
-            Logger::get().log("  Adaptive (state + tables) bits: " + std::to_string(Stats::get().adaptiveBits));
-            Logger::get().log("  Misc bits (final state, final table, offset, etc...): " + std::to_string(Stats::get().miscBits));
+            Logger::get().log(" Updates: " + std::to_string(Stats::get().updates));
+            Logger::get().log(" Bitstream bits: " + std::to_string(Stats::get().bitstreamBits));
+            Logger::get().log(" State bits: " + std::to_string(Stats::get().stateBits));
+            Logger::get().log(" Table bits: " + std::to_string(Stats::get().tableBits));
+            Logger::get().log(" Adaptive (state + tables) bits: " + std::to_string(Stats::get().adaptiveBits));
+            Logger::get().log(" Misc bits (final state, final table, offset, etc...): " + std::to_string(Stats::get().miscBits));
         }
 
 
@@ -259,7 +258,7 @@ int main(const int argc, char *argv[]) {
         uint32_t size = decoder.decodeBins(32);
         std::cout << "Bins to decode: " << std::to_string(size) << std::endl;
         std::vector<uint8_t> decoded(size);
-        for (uint32_t i = 0; i < size; i++) {
+        for (int i = size - 1; i >= 0; i--) {
             decoded[i] = decoder.decodeBin();
         }
         MemoryStats decMemStats = decSampler.stop(baselineDecMem);
