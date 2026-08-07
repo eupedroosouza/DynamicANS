@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include "Stats.h"
+
 class BitstreamWriter {
     uint8_t ptr = 8;
     uint8_t currentBitstream = 0;

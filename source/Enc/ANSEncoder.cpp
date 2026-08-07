@@ -19,6 +19,15 @@ std::vector<uint8_t> &ANSEncoder::finishEncoding() {
 
     const uint8_t offset = writer.flush();
     writer.bitstream.push_back(offset);
+
+    Stats::get().miscBits += (16 + 8 + (2 * context->rangeBits));
+    Logger::get().log(" Finish encoding: ");
+    Logger::get().log("  Final count: " + std::to_string(context->totalCount));
+    Logger::get().log("  Final table: " + std::to_string(context->currentTableIdx));
+    Logger::get().log("  Final state: " + std::to_string(currentState));
+    Logger::get().log("  Bitstream offset: " + std::to_string(offset));
+
+
     return writer.bitstream;
 }
 

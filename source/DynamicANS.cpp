@@ -7,7 +7,9 @@
 #include "Common/Context.h"
 #include "Dec/ANSDecoder.h"
 #include "Enc/ANSEncoder.h"
+#include "Utils/Log.h"
 #include "Utils/Memory.h"
+#include "Utils/Stats.h"
 
 static bool g_doEncode;
 static bool g_doDecode;
@@ -120,6 +122,17 @@ int main(const int argc, char *argv[]) {
                 << std::endl;
         return -1;
     }
+    time_t timestamp = std::time(nullptr);
+    Stats::init();
+
+    Logger::init("logs/" + std::to_string(timestamp) + ".txt");
+    Logger::get().log("Starting codec at " + std::to_string(timestamp));
+
+    Logger::get().log("Configuration: ");
+    Logger::get().log(" Context (tables/range): " + g_tablesFile);
+    Logger::get().log(" Adaptive interval: " + std::to_string(g_adaptativeInterval));
+    Logger::get().log(" Input file: " + g_inputFile);
+
 
     std::cout << "=== CONTEXT ===" << std::endl;
     size_t beforeLoadContextMemUsage = getCurrentRSS();
@@ -151,17 +164,18 @@ int main(const int argc, char *argv[]) {
             input.push_back(c - '0');
         }
         file.close();
+        Logger::get().log("Loaded " + std::to_string(input.size()) + " bits from input.");
 
         PeakMemorySampler encSampler;
         size_t baselineEncMem = getCurrentRSS();
         encSampler.start();
         auto encStart = std::chrono::high_resolution_clock::now();
 
+        Logger::get().log("Starting encode...");
         // Inversed encode
-        for (int i = static_cast<int>(input.size() - 1); i >= 0; i--) {
-            encoder.encodeBin(input[i]);
+        for (uint8_t bit : input) {
+            encoder.encodeBin(bit);
         }
-
         encoder.encodeBins(input.size() , 32);
 
         bytestream = encoder.finishEncoding();
@@ -198,8 +212,22 @@ int main(const int argc, char *argv[]) {
                 outputFile << num;
             }
             std::cout << "Saved encoded (bitstream) file on: " + g_encodedFile + "." << std::endl;
+            Logger::get().log(" Saved encoded (bitstream) file on: " + g_encodedFile + ".");
             outputFile.close();
+
+            Logger::get().log("Finished encoding!");
+
+            Logger::get().log("Stats:");
+            Logger::get().log(" Adaptive: ");
+            Logger::get().log("  Updates: " + std::to_string(Stats::get().updates));
+            Logger::get().log("  Bitstream bits: " + std::to_string(Stats::get().bitstreamBits));
+            Logger::get().log("  State bits: " + std::to_string(Stats::get().stateBits));
+            Logger::get().log("  Table bits: " + std::to_string(Stats::get().tableBits));
+            Logger::get().log("  Adaptive (state + tables) bits: " + std::to_string(Stats::get().adaptiveBits));
+            Logger::get().log("  Misc bits (final state, final table, offset, etc...): " + std::to_string(Stats::get().miscBits));
         }
+
+
     }
 
     context.clear();
@@ -280,6 +308,8 @@ int main(const int argc, char *argv[]) {
             std::cout << "Skipping check input and decode, need's run encode also." << std::endl;
         }
     }
+
+    Logger::get().close();
 
     return 0;
 }

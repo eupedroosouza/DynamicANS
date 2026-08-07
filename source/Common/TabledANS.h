@@ -114,6 +114,8 @@ public:
         const uint32_t &nextState = state.nextStates.at(symbol);
         const StateBitstream &bitstream = state.bitstreams.at(symbol);
         writer.write(bitstream.size, bitstream.bitstream);
+
+        Stats::get().bitstreamBits += bitstream.size;
         currentState = nextState;
     }
 
