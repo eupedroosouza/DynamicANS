@@ -215,16 +215,17 @@ int main(const int argc, char *argv[]) {
             Logger::get().log(" Saved encoded (bitstream) file on: " + g_encodedFile + ".");
             outputFile.close();
 
-            Logger::get().log("Finished encoding!");
-
-            Logger::get().log("Stats:");
-            Logger::get().log(" Updates: " + std::to_string(Stats::get().updates));
-            Logger::get().log(" Bitstream bits: " + std::to_string(Stats::get().bitstreamBits));
-            Logger::get().log(" State bits: " + std::to_string(Stats::get().stateBits));
-            Logger::get().log(" Table bits: " + std::to_string(Stats::get().tableBits));
-            Logger::get().log(" Adaptive (state + tables) bits: " + std::to_string(Stats::get().adaptiveBits));
-            Logger::get().log(" Misc bits (final state, final table, offset, etc...): " + std::to_string(Stats::get().miscBits));
         }
+
+        Logger::get().log("Finished encoding!");
+
+        Logger::get().log("Stats:");
+        Logger::get().log(" Updates: " + std::to_string(Stats::get().updates));
+        Logger::get().log(" Bitstream bits: " + std::to_string(Stats::get().bitstreamBits));
+        Logger::get().log(" State bits: " + std::to_string(Stats::get().stateBits));
+        Logger::get().log(" Table bits: " + std::to_string(Stats::get().tableBits));
+        Logger::get().log(" Adaptive (state + tables) bits: " + std::to_string(Stats::get().adaptiveBits));
+        Logger::get().log(" Misc bits (final state, final table, offset, etc...): " + std::to_string(Stats::get().miscBits));
 
 
     }

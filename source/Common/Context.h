@@ -56,10 +56,13 @@ public:
         // A = 0, B = 1
         const uint32_t countA = counts[0];
         const uint32_t countB = counts[1];
-        Logger::get().log(" Counts:");
-        Logger::get().log("  A (0): " + std::to_string(countA));
-        Logger::get().log("  B (1): " + std::to_string(countB));
-        Logger::get().log("  Total: " + std::to_string(totalCount));
+        Logger::get().log(" Info of last " + std::to_string(totalCount) + " encoded symbols (counts, bits, etc...):");
+        Logger::get().log("  Counts:");
+        Logger::get().log("   A (0): " + std::to_string(countA));
+        Logger::get().log("   B (1): " + std::to_string(countB));
+        Logger::get().log("   Total: " + std::to_string(totalCount));
+        Logger::get().log("   Bitstream bits: " + std::to_string(Stats::get().bitstreamBitsByLastInterval));
+        Stats::get().bitstreamBitsByLastInterval = 0;
 
         // Applying Bayes with Laplace smoothing to avoid 0 probability
         const double probA = static_cast<double>(countA + 1) / ((countA + countB) + 2);

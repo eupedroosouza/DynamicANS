@@ -12,6 +12,8 @@ public:
     uint32_t adaptiveBits = 0;
     uint32_t miscBits = 0; // final state, count, offset, etc...
 
+    uint32_t bitstreamBitsByLastInterval = 0;
+
     static void init() {
         if (!instance) {
             instance = std::make_unique<Stats>();

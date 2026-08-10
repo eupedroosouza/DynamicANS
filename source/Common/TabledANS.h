@@ -116,6 +116,7 @@ public:
         writer.write(bitstream.size, bitstream.bitstream);
 
         Stats::get().bitstreamBits += bitstream.size;
+        Stats::get().bitstreamBitsByLastInterval += bitstream.size;
         currentState = nextState;
     }
 
