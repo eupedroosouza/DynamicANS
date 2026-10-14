@@ -1,9 +1,19 @@
 #pragma once
+#include <bitset>
 #include <cstdint>
-#include <stdexcept>
 #include <vector>
 
-#include "Stats.h"
+static constexpr uint8_t BIT_MASK[9] = {
+    0b00000000, // 0 bits
+    0b00000001, // 1 bit
+    0b00000011, // 2 bits
+    0b00000111, // 3 bits
+    0b00001111, // 4 bits
+    0b00011111, // 5 bits
+    0b00111111, // 6 bits
+    0b01111111, // 7 bits
+    0b11111111 // 8 bits
+};
 
 class BitstreamWriter {
     uint8_t ptr = 8;
@@ -23,11 +33,15 @@ public:
      * @param bits bitstream (0bXXX)
      */
     void write(const uint8_t size, const uint32_t bits) {
-        for (int i = size - 1; i >= 0; i--) {
-            const uint8_t bit = (bits >> i) & 1;
+        uint8_t count = size;
+        while (count > 0) {
+            const uint8_t sizeToWrite = std::min(count, ptr);
+            count -= sizeToWrite;
 
-            ptr--;
-            currentBitstream = currentBitstream | (bit << ptr);
+            const uint8_t bitsToWrite = (bits >> count) & BIT_MASK[sizeToWrite];
+            currentBitstream = currentBitstream | (bitsToWrite << (ptr - sizeToWrite));
+
+            ptr -= sizeToWrite;
 
             if (ptr == 0) {
                 bitstream.push_back(currentBitstream);
@@ -42,30 +56,39 @@ public:
      * Call it when work with bitstream was ended
      * @return offset to read bitstream
      */
-    uint8_t flush() {
-        uint8_t offset = 0;
+    void flush() {
         if (ptr < 8) {
+            uint8_t offset = 0;
             bitstream.push_back(currentBitstream);
             offset = ptr;
             currentBitstream = 0;
             ptr = 8;
+            // Renormalizing vector
+            for (uint32_t i = (bitstream.size() - 1); i > 0; i--) {
+                bitstream[i] = bitstream[i] >> offset;
+                const uint32_t leftNeighborIdx = i - 1;
+                const uint8_t left = bitstream[leftNeighborIdx];
+                uint8_t value = left & BIT_MASK[offset];
+                value = value << (8 - offset);
+                bitstream[i] = bitstream[i] | value;
+            }
+            bitstream[0] = bitstream[0] >> offset;
         }
-        return offset;
     }
 };
 
 class BitstreamReader {
-    uint32_t buffer = 0;
-    unsigned int count = 0;
+    uint64_t buffer = 0;
+    uint32_t count = 0;
 
     /**
      * Load the buffer with 4 bitstream
      */
     void refill() {
-        while (count <= 24 && !bitstream.empty()) {
+        while (count <= 56 && !bitstream.empty()) {
             const uint8_t nextBits = bitstream.back();
             bitstream.pop_back();
-            buffer = buffer | (static_cast<uint32_t>(nextBits) << count);
+            buffer = buffer | (static_cast<uint64_t>(nextBits) << count);
             count += 8;
         }
     }
@@ -75,32 +98,17 @@ public:
 
     BitstreamReader() = default;
 
-    explicit BitstreamReader(std::vector<uint8_t> bs, const std::uint8_t offset) : bitstream(std::move(bs)) {
+    explicit BitstreamReader(std::vector<uint8_t> bs) : bitstream(std::move(bs)) {
         this->refill();
-        if (offset > 0 && offset < 8) {
-            this->read(offset);
-        }
     }
 
     /**
      * Advance (remove) n bits from bitstream
      * @param n number on bits
      */
-    uint32_t read(const unsigned int n) {
-        if (n == 0) {
-            return 0;
-        }
-        if (n > 31) {
-            throw std::invalid_argument("Can't read most 32 bits from bitstreams");
-        }
-
-
+    uint32_t advance(const uint32_t n) {
         if (count < n) {
             this->refill();
-
-            if (count < n) {
-                throw std::runtime_error("Bitstream underflow (not has " + std::to_string(n) + " bits to read)");
-            }
         }
 
         const uint32_t mask = (1U << n) - 1;
@@ -110,9 +118,5 @@ public:
         count -= n;
 
         return data;
-    }
-
-    [[nodiscard]] bool hasBits(const unsigned int n) const {
-        return (count + (bitstream.size() * 8)) >= n;
     }
 };

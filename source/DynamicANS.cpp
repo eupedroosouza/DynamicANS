@@ -136,7 +136,7 @@ int main(const int argc, char *argv[]) {
 
     std::cout << "=== CONTEXT ===" << std::endl;
     size_t beforeLoadContextMemUsage = getCurrentRSS();
-    Context context = Context::loadContextFromFile(g_tablesFile, g_adaptativeInterval);
+    Context context = Context::loadContextFromFile(g_tablesFile);
     size_t afterLoadContextMemUsage = getCurrentRSS();
     size_t memUsageByContext = afterLoadContextMemUsage - beforeLoadContextMemUsage;
     std::cout << "Memory usage (MB):" << std::endl;
@@ -146,10 +146,10 @@ int main(const int argc, char *argv[]) {
 
 
     std::vector<uint8_t> input;
-    std::vector<uint8_t> bytestream;
+    std::deque<std::vector<uint8_t> > bytestream;
     if (g_doEncode) {
         std::cout << "=== ENCODING SUMMARY ===" << std::endl;
-        ANSEncoder encoder(&context);
+        ANSEncoder encoder(&context, g_adaptativeInterval);
 
         // Load input
         std::ifstream file(g_inputFile);
@@ -173,10 +173,10 @@ int main(const int argc, char *argv[]) {
 
         Logger::get().log("Starting encode...");
         // Inversed encode
-        for (uint8_t bit : input) {
+        for (uint8_t bit: input) {
             encoder.encodeBin(bit);
         }
-        encoder.encodeBins(input.size() , 32);
+        encoder.encodeBins(input.size(), 32);
 
         bytestream = encoder.finishEncoding();
 
@@ -185,19 +185,22 @@ int main(const int argc, char *argv[]) {
         double encTime = std::chrono::duration<double>(encEnd - encStart).count();
 
         uint32_t originalBitsSize = input.size();
-        uint32_t encodedBitsSize = bytestream.size() * 8;
+        uint32_t encodedBitsSize = 0;
+        for (const auto &bs: bytestream) {
+            encodedBitsSize += bs.size() * 8;
+        }
         double compressionRatio = (static_cast<double>(originalBitsSize) / encodedBitsSize);
         double compression = (1.0 - (static_cast<double>(encodedBitsSize) / originalBitsSize)) * 100.0;
-
 
 
         std::cout << "Bins encoded: " + std::to_string(input.size()) << std::endl;
         std::cout << "Original size (bits): " + std::to_string(originalBitsSize) << std::endl;
         std::cout << "Encoded size (bits): " + std::to_string(encodedBitsSize) << std::endl;
-        std::cout << "Compression ratio: " + std::to_string(compressionRatio)  << std::endl;
+        std::cout << "Compression ratio: " + std::to_string(compressionRatio) << std::endl;
         std::cout << "Compression (%): " + std::to_string(compression) << std::endl;
-        std::cout << "Final state: " << std::to_string(encoder.currentState) << std::endl;
+        //std::cout << "Final state: " << std::to_string(encoder.currentState) << std::endl;
         std::cout << "Encode time: " << std::to_string(encTime) << std::endl;
+        //std::cout << "Chunks: " << std::to_string(encoder.chunks) << std::endl;
         printMemStats("Encode memory:", encMemStats);
 
         // Saving bitstreams
@@ -207,14 +210,15 @@ int main(const int argc, char *argv[]) {
                 std::cerr << "Error: Could not open or create the file!" << std::endl;
                 return -1;
             }
-            for (unsigned char value: bytestream) {
-                std::bitset<8> num(value);
-                outputFile << num;
+            for (const auto &bs: bytestream) {
+                for (uint8_t value: bs) {
+                    std::bitset<8> num(value);
+                    outputFile << num;
+                }
             }
             std::cout << "Saved encoded (bitstream) file on: " + g_encodedFile + "." << std::endl;
             Logger::get().log(" Saved encoded (bitstream) file on: " + g_encodedFile + ".");
             outputFile.close();
-
         }
 
         Logger::get().log("Finished encoding!");
@@ -225,31 +229,13 @@ int main(const int argc, char *argv[]) {
         Logger::get().log(" State bits: " + std::to_string(Stats::get().stateBits));
         Logger::get().log(" Table bits: " + std::to_string(Stats::get().tableBits));
         Logger::get().log(" Adaptive (state + tables) bits: " + std::to_string(Stats::get().adaptiveBits));
-        Logger::get().log(" Misc bits (final state, final table, offset, etc...): " + std::to_string(Stats::get().miscBits));
-
-
-    }
-
-    context.clear();
-
-    if (g_doDecode && !g_doEncode) {
-        std::ifstream file(g_bitstreamFile);
-        if (!file.is_open()) {
-            std::cerr << "Fail open input file: " + g_inputFile;
-            return -1;
-        }
-        std::string s;
-        char ch;
-        while (file.get(ch)) {
-            auto value = static_cast<uint8_t>(ch);
-            bytestream.push_back(value);
-        }
-        file.close();
+        Logger::get().log(
+            " Misc bits (final state, final table, offset, etc...): " + std::to_string(Stats::get().miscBits));
     }
 
     if (g_doDecode) {
         std::cout << "=== DECODING SUMMARY ===" << std::endl;
-        ANSDecoder decoder(&context, std::move(bytestream));
+        ANSDecoder decoder(&context, g_adaptativeInterval, std::move(bytestream));
 
         std::cout << "Initial state (final state of encode): " << std::to_string(decoder.currentState) << std::endl;
         PeakMemorySampler decSampler;
@@ -275,7 +261,7 @@ int main(const int argc, char *argv[]) {
                 std::cerr << "Error: Could not open or create the file!" << std::endl;
                 return -1;
             }
-            for (uint8_t bit : decoded ) {
+            for (uint8_t bit: decoded) {
                 std::bitset<1> num(bit);
                 outputFile << num;
             }
@@ -290,7 +276,7 @@ int main(const int argc, char *argv[]) {
             if (input.size() != decoded.size()) {
                 eq = false;
                 reason = "input size not equal decoded size";
-            }else {
+            } else {
                 for (int i = 0; i < input.size(); i++) {
                     if (input[i] != decoded[i]) {
                         eq = false;
@@ -308,6 +294,7 @@ int main(const int argc, char *argv[]) {
             std::cout << "Skipping check input and decode, need's run encode also." << std::endl;
         }
     }
+
 
     Logger::get().close();
 

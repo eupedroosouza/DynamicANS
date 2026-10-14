@@ -5,6 +5,7 @@
 #include <list>
 
 #include "Utils/Bitstream.h"
+#include "Utils/Stats.h"
 
 
 class StateBitstream {
@@ -54,12 +55,14 @@ public:
 
 
 class Table {
-    uint32_t L = 0;
 
     std::vector<State> states = {};
     std::vector<DecodeState> decodeStates = {};
 
 public:
+
+    uint32_t L = 0;
+
     std::vector<uint32_t> alphabet;
 
     Table() = default;
@@ -135,7 +138,7 @@ public:
             return decodeState.symbol;
         }
 
-        const auto readBitstreams = reader.read(decodeState.N);
+        const auto readBitstreams = reader.advance(decodeState.N);
         currentState = decodeState.base + readBitstreams;
         return decodeState.symbol;
     }

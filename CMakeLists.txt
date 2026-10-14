@@ -21,5 +21,5 @@ set(SOURCES
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}")
 add_executable(DynamicANS ${SOURCES})
 target_include_directories(DynamicANS PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/source)
-target_compile_options(DynamicANS PRIVATE -O2 -Wall -Wextra)
-target_link_options(DynamicANS PRIVATE -static -static-libgcc -static-libstdc++)
+#target_compile_options(DynamicANS PRIVATE -O2 -Wall -Wextra)
+#target_link_options(DynamicANS PRIVATE -static -static-libgcc -static-libstdc++)
